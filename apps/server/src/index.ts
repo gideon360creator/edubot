@@ -35,7 +35,7 @@ app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
 
-app.get("/health", (c) => {
+app.get("/api/v1/health", (c) => {
   const state = mongoose.connection.readyState;
   const stateMap: Record<number, string> = {
     0: "disconnected",
