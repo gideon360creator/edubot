@@ -1,0 +1,98 @@
+EDUBOT PROJECT DOCUMENTATION
+============================
+
+1. PROJECT OVERVIEW
+------------------
+Edubot is a modern educational management platform built with a focus on AI integration, role-based access control, and a seamless user experience. It facilitates interactions between Students and Lecturers, managing subjects, assessments, and grading with an integrated AI assistant.
+
+2. ARCHITECTURE & TECH STACK
+---------------------------
+The project is organized as a Monorepo using Turborepo for orchestration and Bun as the primary runtime and package manager.
+
+Root Structure:
+- /apps: Contains the main applications (client, server).
+- /packages: Contains shared configurations (eslint, typescript, ui).
+- turbo.json: Turborepo configuration for task pipelining.
+- package.json: Root dependencies and workspace definitions.
+
+2.1 BACKEND (apps/server)
+-------------------------
+A high-performance API built with Hono.js and Node.js/Bun.
+
+Core Technologies:
+- Runtime: Bun
+- Framework: Hono.js (Ultra-fast web framework)
+- Database: MongoDB with Mongoose (ODM)
+- Validation: Zod (Schema-first validation)
+- AI Logic: Groq SDK (Llama 3 integration)
+- Security: JWT Authentication using `jose`
+
+Directory Structure:
+- src/index.ts: Application entry point, middleware setup (CORS, Logger), and database connection initialization.
+- src/api/v1/app: Contains Controllers and Routes.
+- src/api/v1/models: Mongoose schemas for User, Subject, Assessment, Grade, and Enrollment.
+- src/api/v1/services: Business logic layers for complex operations (e.g., AI chat processing, grading logic).
+- src/api/v1/utils: Helper functions, custom error handling, and environment variable management.
+
+Key Features:
+- Modular API routing under /api/v1.
+- Robust error handling with custom `CustomError` class and middleware.
+- Health check endpoint for system monitoring.
+
+2.2 FRONTEND (apps/client)
+--------------------------
+A modern, responsive SPA built with React 19 and Vite.
+
+Core Technologies:
+- UI Framework: React 19
+- Build Tool: Vite
+- Routing: TanStack Router (Type-safe routing)
+- Data Fetching: TanStack Query (Server state management)
+- State Management: Zustand (Client state management)
+- Styling: Tailwind CSS v4 (Utility-first styling)
+- Components: Radix UI primitives + Custom UI components (Shadcn based)
+- Animations: Framer Motion
+- Notifications: Sonner
+
+Directory Structure:
+- src/main.tsx: Entry point for the React application.
+- src/routes: File-based routing system. Includes `_authenticated` layout group for protected routes.
+- src/components: Reusable UI components, including specialized components for chat, dashboards, and tables.
+- src/hooks: Custom hooks for API interactions (TanStack Query hooks) and UI logic.
+- src/auth: Authentication logic and Zustand store for user session management.
+
+Key Features:
+- Role-Based Access Control (RBAC): Differentiates between Student and Lecturer views.
+- Dynamic Dashboards: Interactive visualizations using Recharts.
+- AI Chat Interface: A premium AI-powered assistant for students and lecturers.
+- Type-safe API communication through TanStack Query and generated route trees.
+
+3. DATABASE MODELS & RELATIONSHIPS
+---------------------------------
+- User: Stores credentials, profile info, and roles (Student/Lecturer).
+- Subject: Represents courses offered.
+- Enrollment: Links Students to Subjects they are taking.
+- Assessment: Quizzes and tests created by Lecturers for specific Subjects.
+- Grade: Records Student performance on Assessments.
+
+4. SYSTEM FLOW & INTEGRATION
+----------------------------
+- Authentication: Handled via the `/users/login` endpoint on the server, returning a JWT. The client stores this session in a Zustand `auth-store` and includes the token in API requests.
+- Authorization: Protected routes on the client use a Tanstack-Router beforeLoad function. The server validates roles via middleware.
+- AI Interaction: The client sends messages to `/chat`. The server processes these using Groq (Llama 3) with specialized educational prompts to assist students.
+- Data Flow: TanStack Query manages the lifecycle of data fetching, caching, and synchronization between the Hono API and the React UI.
+
+5. DEVELOPMENT WORKFLOW
+-----------------------
+- Package Management: Uses `bun` exclusively.
+- Running Locally: `bun dev` from the root starts both the client (port 3001) and server (default port) concurrently via Turbo.
+- Build Process: `bun run build` triggers optimized builds for both applications.
+- Linting/Formatting: Enforced via Prettier and ESLint across the monorepo.
+
+6. DESIGN PHILOSOPHY
+-------------------
+The project prioritizes a "Premium" feel with:
+- Glassmorphism effects in the AI interface.
+- Smooth transitions and micro-animations.
+- A consistent Dark/Light mode theme system.
+- Responsive layouts tailored for both desktop and mobile usage.
