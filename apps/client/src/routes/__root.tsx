@@ -14,7 +14,7 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
-    <>
+    <main className="selection:bg-transparent">
       {/* <Header /> */}
       <Outlet />
       <Toaster closeButton />
@@ -30,6 +30,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           TanStackQueryDevtools,
         ]}
       />
-    </>
+    </main>
   ),
 })

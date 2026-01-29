@@ -22,7 +22,7 @@ app.use(
   "/api/v1/*",
   cors({
     origin: "*",
-    allowMethods: ["GET", "POST", "PUT", "DELETE"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     // credentials: true,
   }),
 );
