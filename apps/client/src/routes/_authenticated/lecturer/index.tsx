@@ -30,9 +30,8 @@ export const Route = createFileRoute('/_authenticated/lecturer/')({
 
 function LecturerDashboard() {
   const { data: subjects, isLoading: isSubjectsLoading } = useSubjectsQuery()
-  const { data: assessments, isLoading: isAssessmentsLoading } =
-    useAssessmentsQuery()
-  const { data: grades, isLoading: isGradesLoading } = useGradesQuery()
+  const { data: assessments } = useAssessmentsQuery()
+  const { data: grades } = useGradesQuery()
 
   const stats = [
     {
@@ -193,8 +192,8 @@ function stats_calc_completion(
   if (!grades || !assessments || assessments.length === 0) return '0%'
   // Simple heuristic: percentage of grades compared to a rough estimate of expected grades
   // For a real app, we'd need enrollment counts per subject
-  const totalWeight = assessments.reduce((acc, a) => acc + (a.weight || 0), 0)
-  const averageWeight = totalWeight / assessments.length
+  // const totalWeight = assessments.reduce((acc, a) => acc + (a.weight || 0), 0)
+  // const averageWeight = totalWeight / assessments.length
 
   // This is just a placeholder logic for the dashboard visual
   const percentage = Math.min(
