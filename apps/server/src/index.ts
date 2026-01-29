@@ -5,9 +5,12 @@ import mongoose from "mongoose";
 import apiRouter from "@/api/v1/app/routes";
 import { connectMongo } from "@/api/v1/models";
 import { respond } from "@/api/v1/utils/respond";
-import { CustomError } from "@/api/v1/utils";
+import { CustomError, initKeepAlive } from "@/api/v1/utils";
 
 const app = new Hono();
+
+// initialize keep-alive cron job
+initKeepAlive();
 
 // initialize db (fail fast if not reachable)
 await connectMongo().catch((err) => {
@@ -21,7 +24,7 @@ app.use(
     origin: "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE"],
     // credentials: true,
-  })
+  }),
 );
 
 app.use("*", logger());

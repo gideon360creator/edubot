@@ -8,8 +8,10 @@ export class CustomError extends Error {
   constructor(
     public message: string,
     public statusCode: number,
-    public error: { [key: string]: any } | any = {}
+    public error: { [key: string]: any } | any = {},
   ) {
     super();
   }
 }
+
+export * from "./keep-alive";
