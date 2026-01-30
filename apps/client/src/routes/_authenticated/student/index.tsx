@@ -17,6 +17,7 @@ import { useAuth } from '@/auth/auth-store'
 import { useMyGpaQuery, useMyGradesQuery } from '@/hooks/queries/grades.queries'
 import { useEnrolledSubjectsQuery } from '@/hooks/queries/subjects.queries'
 import { useMeQuery } from '@/hooks/queries/user.queries'
+import { cn, sleep } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -53,20 +54,32 @@ function StudentDashboard() {
   const {
     data: grades,
     isLoading: isLoadingGrades,
+    isFetching: isFetchingGrades,
     refetch: refetchGrades,
   } = useMyGradesQuery()
   const {
     data: gpa,
     isLoading: isLoadingGpa,
+    isFetching: isFetchingGpa,
     refetch: refetchGpa,
   } = useMyGpaQuery()
   const {
     data: enrolledSubjects,
     isLoading: isLoadingSubjects,
+    isFetching: isFetchingSubjects,
     refetch: refetchSubjects,
   } = useEnrolledSubjectsQuery()
 
-  const { refetch: refetchMe } = useMeQuery()
+  const { isFetching: isFetchingMe, refetch: refetchMe } = useMeQuery()
+
+  const [isManualRefreshing, setIsManualRefreshing] = React.useState(false)
+
+  const isRefreshing =
+    isFetchingGrades ||
+    isFetchingGpa ||
+    isFetchingSubjects ||
+    isFetchingMe ||
+    isManualRefreshing
 
   const [selectedSubject, setSelectedSubject] = React.useState<{
     id: string
@@ -74,11 +87,29 @@ function StudentDashboard() {
     code: string
   } | null>(null)
 
-  const handleRefresh = React.useCallback(() => {
-    refetchGrades()
-    refetchGpa()
-    refetchSubjects()
-    refetchMe()
+  const handleRefresh = React.useCallback(async () => {
+    setIsManualRefreshing(true)
+    const startTime = Date.now()
+
+    // Trigger all refetches
+    const refetchPromises = [
+      refetchGrades(),
+      refetchGpa(),
+      refetchSubjects(),
+      refetchMe(),
+    ]
+
+    await Promise.all(refetchPromises)
+
+    // Calculate remaining time to hit 2 seconds
+    const elapsed = Date.now() - startTime
+    const remaining = Math.max(0, 2000 - elapsed)
+
+    if (remaining > 0) {
+      await sleep(remaining)
+    }
+
+    setIsManualRefreshing(false)
   }, [refetchGrades, refetchGpa, refetchSubjects, refetchMe])
 
   // Calculate average score
@@ -136,10 +167,13 @@ function StudentDashboard() {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            className="h-9 gap-2"
+            disabled={isRefreshing}
+            className="h-9 gap-2 cursor-pointer shadow-sm hover:bg-slate-50 transition-all font-medium"
           >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
+            <RefreshCw
+              className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+            />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
         }
       />
