@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { Filter } from 'lucide-react'
 
 import type { Subject } from '@/hooks/api/subjects.api'

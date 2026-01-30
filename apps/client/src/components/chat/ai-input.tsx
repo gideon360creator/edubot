@@ -5,10 +5,8 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupText,
   InputGroupTextarea,
 } from '@/components/ui/input-group'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 interface AIInputProps {
