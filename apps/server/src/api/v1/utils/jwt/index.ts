@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { env } from "@/api/v1/utils/env";
 
-const DEFAULT_EXP = "2h";
+const DEFAULT_EXP = "7d";
 const ALG = "HS256";
 
 const getSecret = (): Uint8Array => {
@@ -19,7 +19,7 @@ export interface AppJwtPayload extends JWTPayload {
 
 export const signToken = async (
   payload: Omit<AppJwtPayload, "exp" | "iat">,
-  expiresIn: string = DEFAULT_EXP
+  expiresIn: string = DEFAULT_EXP,
 ): Promise<string> => {
   const secret = getSecret();
   return await new SignJWT(payload)
@@ -30,7 +30,7 @@ export const signToken = async (
 };
 
 export const verifyToken = async (
-  token: string
+  token: string,
 ): Promise<AppJwtPayload & { sub: string }> => {
   const secret = getSecret();
   const { payload } = await jwtVerify<AppJwtPayload>(token, secret, {
