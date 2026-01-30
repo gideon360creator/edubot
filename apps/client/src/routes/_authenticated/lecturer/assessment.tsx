@@ -31,6 +31,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { SubjectFilter } from '@/components/filters/subject-filter'
+import { useSubjectsQuery } from '@/hooks/queries/subjects.queries'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_authenticated/lecturer/assessment')({
   component: RouteComponent,
@@ -42,14 +46,19 @@ function RouteComponent() {
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
   const [selectedAssessment, setSelectedAssessment] =
     React.useState<Assessment | null>(null)
+  const [selectedSubject, setSelectedSubject] = React.useState<string>('all')
 
-  const { data: assessments, isLoading } = useAssessmentsQuery()
+  const { data: assessments, isLoading: isAssessmentsLoading } =
+    useAssessmentsQuery(selectedSubject === 'all' ? undefined : selectedSubject)
+  const { data: subjects, isLoading: isSubjectsLoading } = useSubjectsQuery()
   const { mutateAsync: createAssessment, isPending: isCreating } =
     useCreateAssessmentMutation()
   const { mutateAsync: updateAssessment, isPending: isUpdating } =
     useUpdateAssessmentMutation()
   const { mutateAsync: deleteAssessment, isPending: isDeleting } =
     useDeleteAssessmentMutation()
+
+  const isLoading = isAssessmentsLoading || isSubjectsLoading
 
   const columns: Array<ColumnDef<Assessment>> = [
     {
@@ -217,36 +226,66 @@ function RouteComponent() {
         title="Assessments"
         description="Manage exams, quizzes, and assignments for your subjects."
         action={
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Add Assessment
-          </Button>
+          <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+            <SubjectFilter
+              value={selectedSubject}
+              onChange={setSelectedSubject}
+              subjects={subjects}
+              label=""
+            />
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline">Add Assessment</span>
+              <span className="xs:hidden">Add</span>
+            </Button>
+          </div>
         }
       />
 
-      <div className="flex-1">
-        {isLoading ? (
-          <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-muted-foreground animate-pulse">
-              Loading assessments...
-            </p>
+      <Card className="border-none shadow-sm bg-background/50 backdrop-blur-sm">
+        <CardHeader className="pb-3 px-6">
+          <CardTitle className="text-lg font-semibold flex items-center justify-between">
+            <span>Assessment Records</span>
+            {selectedSubject !== 'all' && (
+              <Badge variant="outline" className="font-normal capitalize">
+                {subjects?.find((s) => s.id === selectedSubject)?.name}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-6 pb-6">
+          <div className="flex-1">
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            ) : assessments && assessments.length > 0 ? (
+              <div className="rounded-xl border border-border overflow-hidden">
+                <DataTable columns={columns} data={assessments} />
+              </div>
+            ) : (
+              <EmptyState
+                icon={ClipboardList}
+                title={
+                  selectedSubject !== 'all'
+                    ? 'No assessments for this subject'
+                    : 'No assessments yet'
+                }
+                description={
+                  selectedSubject !== 'all'
+                    ? 'Try selecting a different subject or create a new assessment.'
+                    : 'Create your first assessment to start tracking student progress.'
+                }
+              />
+            )}
           </div>
-        ) : assessments && assessments.length > 0 ? (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <DataTable columns={columns} data={assessments} />
-          </div>
-        ) : (
-          <EmptyState
-            icon={ClipboardList}
-            title="No assessments yet"
-            description="Create your first assessment to start tracking student progress."
-          />
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
       <AssessmentFormDialog
         open={isAddOpen}

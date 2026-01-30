@@ -3,6 +3,8 @@ import type {
   ChatRequest,
   ChatResponse,
   ChatStreamOptions,
+  ChatMessage,
+  ChatThread,
 } from '../queries/chat.queries'
 import type { ServerResponse } from './types'
 import { env } from '@/env'
@@ -12,11 +14,24 @@ export const chatApi = {
     const response = await api.post<ServerResponse<ChatResponse>>('/chat', data)
     return response.data.data
   },
+  getHistory: async (threadId?: string) => {
+    if (!threadId) return []
+    const response = await api.get<ServerResponse<{ history: ChatMessage[] }>>(
+      `/chat/history?threadId=${threadId}`,
+    )
+    return response.data.data.history
+  },
+  getThreads: async () => {
+    const response =
+      await api.get<ServerResponse<{ threads: ChatThread[] }>>('/chat/threads')
+    return response.data.data.threads
+  },
 
   streamMessage: async (
     message: string,
     token: string | null,
     options?: ChatStreamOptions,
+    threadId?: string,
   ) => {
     const baseURL = env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 
@@ -26,7 +41,7 @@ export const chatApi = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, threadId }),
     })
 
     if (!response.ok) {
@@ -41,6 +56,7 @@ export const chatApi = {
     let buffer = ''
     const decoder = new TextDecoder()
     let fullResponse = ''
+    let serverThreadId: string | undefined
 
     try {
       for (;;) {
@@ -56,16 +72,15 @@ export const chatApi = {
           if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue
 
           const data = trimmedLine.slice(6).trim()
-          if (data === '[DONE]') {
-            options?.onFinish?.(fullResponse)
-            continue
-          }
 
           try {
             const parsed = JSON.parse(data)
             if (parsed.chunk) {
               fullResponse += parsed.chunk
               options?.onChunk?.(parsed.chunk)
+            } else if (parsed.done) {
+              serverThreadId = parsed.threadId
+              options?.onFinish?.(fullResponse, serverThreadId)
             } else if (parsed.error) {
               throw new Error(parsed.error)
             }
@@ -80,6 +95,6 @@ export const chatApi = {
       throw error
     }
 
-    return fullResponse
+    return { fullResponse, threadId: serverThreadId }
   },
 }

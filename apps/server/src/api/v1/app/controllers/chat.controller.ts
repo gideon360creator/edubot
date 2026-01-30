@@ -9,11 +9,27 @@ const encoder = new TextEncoder();
 export const chatOnce = async (c: Context) => {
   const body = (c.req as any).valid("json") as ChatRequestInput;
   const user = c.get("user");
-  const response = await ChatService.generate({
+  const { response, threadId } = (await ChatService.generate({
     user,
     message: body.message,
-  });
-  return respond(c, 200, "Chat response", { response });
+    threadId: body.threadId,
+  })) as any;
+  return respond(c, 200, "Chat response", { response, threadId });
+};
+
+export const getHistory = async (c: Context) => {
+  const threadId = c.req.query("threadId");
+  if (!threadId) {
+    throw new CustomError("threadId is required", 400);
+  }
+  const history = await ChatService.getMessagesByThread(threadId);
+  return respond(c, 200, "Chat history", { history });
+};
+
+export const getThreads = async (c: Context) => {
+  const user = c.get("user");
+  const threads = await ChatService.getThreads(user.id);
+  return respond(c, 200, "Chat threads", { threads });
 };
 
 export const streamChat = async (c: Context) => {
@@ -28,7 +44,9 @@ export const streamChat = async (c: Context) => {
   };
 
   const sendData = (payload: any) => {
-    return write(`data: ${typeof payload === "string" ? payload : JSON.stringify(payload)}\n\n`);
+    return write(
+      `data: ${typeof payload === "string" ? payload : JSON.stringify(payload)}\n\n`,
+    );
   };
 
   const close = async () => {
@@ -50,19 +68,18 @@ export const streamChat = async (c: Context) => {
 
   void (async () => {
     try {
-      await ChatService.stream({
+      const { threadId } = (await ChatService.stream({
         user,
         message: body.message,
+        threadId: body.threadId,
         onChunk: async (text) => {
           await sendData({ chunk: text });
         },
-      });
-      await sendData("[DONE]");
+      })) as any;
+      await sendData({ threadId, done: true });
     } catch (err: any) {
       const message =
-        err instanceof CustomError
-          ? err.message
-          : "Chat service unavailable";
+        err instanceof CustomError ? err.message : "Chat service unavailable";
       await sendData({ error: message });
     } finally {
       if (signal) {

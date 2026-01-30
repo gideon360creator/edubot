@@ -52,7 +52,7 @@ function RouteComponent() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 px-4">
+        <div className="flex flex-1 flex-col gap-4">
           <Outlet />
         </div>
       </SidebarInset>

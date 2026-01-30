@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FileText, Filter, Pencil, Plus, Trash2 } from 'lucide-react'
+import { FileText, Pencil, Plus, Trash2 } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -20,13 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/layout/page-header'
 import { GradeFormDialog } from '@/components/grades/grade-form-dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SubjectFilter } from '@/components/filters/subject-filter'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,32 +196,16 @@ function ManageGradesPage() {
         title="Manage Grades"
         description="Input and review student scores for assessments."
         action={
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border shadow-sm">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                Filter by:
-              </span>
-              <Select
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
-              >
-                <SelectTrigger className="h-8 w-[200px] border-none bg-transparent shadow-none focus:ring-0">
-                  <SelectValue placeholder="All Subjects" />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="all">All Subjects</SelectItem>
-                  {subjects?.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+            <SubjectFilter
+              value={selectedSubject}
+              onChange={setSelectedSubject}
+              subjects={subjects}
+              label=""
+            />
             <Button
               onClick={() => setIsAddOpen(true)}
-              className="rounded-xl h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+              className="rounded-xl h-10 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 shrink-0"
             >
               <Plus className="mr-2 h-4 w-4" />
               New Grade

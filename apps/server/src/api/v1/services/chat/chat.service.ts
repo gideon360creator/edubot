@@ -6,6 +6,8 @@ import { AssessmentModel } from "@/api/v1/models/assessment.model";
 import { GradeModel } from "@/api/v1/models/grade.model";
 import { UserModel } from "@/api/v1/models/user.model";
 import { EnrollmentModel } from "@/api/v1/models/enrollment.model";
+import { ChatMessageModel } from "@/api/v1/models/chat-message.model";
+import { ChatThreadModel } from "@/api/v1/models/chat-thread.model";
 import GradesService from "@/api/v1/services/grades/grades.service";
 
 type ChatUser = {
@@ -172,11 +174,36 @@ class ChatServiceImpl {
     };
   }
 
-  private buildSystemPrompt(context: ChatContext) {
+  private async generateTitle(message: string): Promise<string> {
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Generate a very short, concise title (max 5 words) for a chat conversation based on the first user message provided. Do not use quotes, periods, or prefixes like 'Title:'. Just the words.",
+          },
+          { role: "user", content: message },
+        ],
+        temperature: 0.5,
+        max_tokens: 20,
+      });
+      return completion.choices?.[0]?.message?.content?.trim() || "New Chat";
+    } catch (err) {
+      return "New Chat";
+    }
+  }
+
+  private buildSystemPrompt(context: ChatContext, history: string[] = []) {
     const sections = [
       "You are a student performance assistant. Answer concisely, in markdown, with actionable next steps.",
       `User profile: ${context.userSummary}`,
     ];
+
+    if (history.length > 0) {
+      sections.push("", "Recent conversation history:", ...history, "");
+    }
 
     if (context.gpaSummary) sections.push(`GPA/Stats: ${context.gpaSummary}`);
     if (context.subjects.length) {
@@ -237,10 +264,45 @@ class ChatServiceImpl {
     return sections.join("\n");
   }
 
-  async generate(input: { user: ChatUser; message: string }) {
+  async getThreads(userId: string) {
+    return await ChatThreadModel.find({ userId }).sort({ updatedAt: -1 });
+  }
+
+  async getMessagesByThread(threadId: string) {
+    return await ChatMessageModel.find({ threadId }).sort({ createdAt: 1 });
+  }
+
+  async generate(input: {
+    user: ChatUser;
+    message: string;
+    threadId?: string;
+  }) {
     const { user, message } = input;
+    let threadId = input.threadId;
+
+    if (!threadId) {
+      const thread = await ChatThreadModel.create({
+        userId: user.id,
+        title: await this.generateTitle(message),
+      });
+      threadId = (thread as any).id;
+    }
+
+    // Save user message
+    await ChatMessageModel.create({
+      userId: user.id,
+      threadId,
+      role: "user",
+      content: message,
+    });
+
+    const recentHistory = await this.getMessagesByThread(threadId as string);
+    const historyStrings = recentHistory.map(
+      (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
+    );
+
     const context = await this.buildContext(user);
-    const systemPrompt = this.buildSystemPrompt(context);
+    const systemPrompt = this.buildSystemPrompt(context, historyStrings);
 
     try {
       const completion = await this.client.chat.completions.create({
@@ -257,7 +319,21 @@ class ChatServiceImpl {
       if (!content) {
         throw new CustomError("Chat service unavailable", 503);
       }
-      return content;
+
+      // Save assistant response
+      await ChatMessageModel.create({
+        userId: user.id,
+        threadId,
+        role: "assistant",
+        content,
+      });
+
+      // Update thread timestamp
+      await ChatThreadModel.findByIdAndUpdate(threadId, {
+        updatedAt: new Date(),
+      });
+
+      return { content, threadId };
     } catch (err: any) {
       throw new CustomError("Chat service unavailable", 503, {
         error: err?.message,
@@ -268,11 +344,35 @@ class ChatServiceImpl {
   async stream(input: {
     user: ChatUser;
     message: string;
+    threadId?: string;
     onChunk: (text: string) => Promise<void> | void;
   }) {
     const { user, message, onChunk } = input;
+    let threadId = input.threadId;
+
+    if (!threadId) {
+      const thread = await ChatThreadModel.create({
+        userId: user.id,
+        title: await this.generateTitle(message),
+      });
+      threadId = (thread as any).id;
+    }
+
+    // Save user message
+    await ChatMessageModel.create({
+      userId: user.id,
+      threadId,
+      role: "user",
+      content: message,
+    });
+
+    const recentHistory = await this.getMessagesByThread(threadId as string);
+    const historyStrings = recentHistory.map(
+      (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
+    );
+
     const context = await this.buildContext(user);
-    const systemPrompt = this.buildSystemPrompt(context);
+    const systemPrompt = this.buildSystemPrompt(context, historyStrings);
 
     try {
       const stream = await this.client.chat.completions.create({
@@ -286,12 +386,31 @@ class ChatServiceImpl {
         ],
       });
 
+      let fullResponse = "";
       for await (const chunk of stream as any) {
         const delta = chunk?.choices?.[0]?.delta?.content;
         if (delta) {
+          fullResponse += delta;
           await onChunk(delta);
         }
       }
+
+      // Save complete assistant response
+      if (fullResponse.trim()) {
+        await ChatMessageModel.create({
+          userId: user.id,
+          threadId,
+          role: "assistant",
+          content: fullResponse.trim(),
+        });
+
+        // Update thread timestamp
+        await ChatThreadModel.findByIdAndUpdate(threadId, {
+          updatedAt: new Date(),
+        });
+      }
+
+      return { threadId };
     } catch (err: any) {
       throw new CustomError("Chat service unavailable", 503, {
         error: err?.message,

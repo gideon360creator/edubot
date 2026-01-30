@@ -47,17 +47,11 @@ export function AIInput({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="min-h-[40px] max-h-[200px] py-2.5 px-4 text-sm focus-visible:ring-0"
+          className="min-h-[40px] max-h-[200px] py-2.5 px-4 text-sm focus-visible:ring-0 placeholder:text-xs"
         />
-        <InputGroupAddon align="block-end" className="px-3 pb-2">
-          <InputGroupText className="ml-auto text-[10px] font-medium opacity-40">
-            AI Assistant
-          </InputGroupText>
-
-          <Separator className="h-4! mx-2 opacity-30" orientation="vertical" />
-
+        <InputGroupAddon align="inline-end" className="px-3">
           <InputGroupButton
-            className="rounded-full h-7 w-7 bg-primary/90 hover:bg-primary shadow-sm transition-all text-primary-foreground"
+            className="rounded-full h-7 w-7 bg-primary/90 hover:bg-primary shadow-sm transition-all text-primary-foreground cursor-pointer"
             disabled={!value.trim() || isLoading}
             size="icon-xs"
             variant="default"

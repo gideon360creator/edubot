@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Filter, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { EnrolledStudent } from '@/hooks/api/user.api'
@@ -10,13 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/layout/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SubjectFilter } from '@/components/filters/subject-filter'
 
 export const Route = createFileRoute(
   '/_authenticated/lecturer/registered-users',
@@ -113,29 +107,14 @@ function RegisteredUsersPage() {
         title="Registered Students"
         description="A list of all students enrolled in your subjects."
         action={
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border shadow-sm">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                Filter by:
-              </span>
-              <Select
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
-              >
-                <SelectTrigger className="h-8 w-[200px] border-none bg-transparent shadow-none focus:ring-0">
-                  <SelectValue placeholder="All Subjects" />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="all">All Subjects</SelectItem>
-                  {subjects?.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <SubjectFilter
+              value={selectedSubject}
+              onChange={setSelectedSubject}
+              subjects={subjects}
+              label="Filter by:"
+              selectTriggerClassName="sm:w-[200px]"
+            />
           </div>
         }
       />

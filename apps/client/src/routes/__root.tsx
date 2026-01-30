@@ -14,7 +14,7 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
-    <main className="selection:bg-transparent">
+    <main className="select-none">
       {/* <Header /> */}
       <Outlet />
       <Toaster closeButton />

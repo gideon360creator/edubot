@@ -32,13 +32,13 @@ export function PageHeader({
           >
             <Icon className="h-6 w-6" />
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight bg-linear-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight bg-linear-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
             {title}
           </h1>
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl">{description}</p>
       </div>
-      {action && <div>{action}</div>}
+      {action && <div className="w-full md:w-auto mt-2 md:mt-0">{action}</div>}
     </motion.div>
   )
 }
