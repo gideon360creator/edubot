@@ -25,7 +25,6 @@ const SubjectSchema = new Schema<SubjectDocument>(
     code: {
       type: String,
       required: true,
-      unique: true,
       uppercase: true,
       trim: true,
     },
@@ -48,6 +47,8 @@ const SubjectSchema = new Schema<SubjectDocument>(
     },
   },
 );
+
+SubjectSchema.index({ lecturerId: 1, code: 1 }, { unique: true });
 
 SubjectSchema.plugin(mongoosePaginate);
 SubjectSchema.plugin(aggregatePaginate);

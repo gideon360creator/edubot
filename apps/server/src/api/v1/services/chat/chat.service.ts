@@ -6,7 +6,6 @@ import { AssessmentModel } from "@/api/v1/models/assessment.model";
 import { GradeModel } from "@/api/v1/models/grade.model";
 import { UserModel } from "@/api/v1/models/user.model";
 import { EnrollmentModel } from "@/api/v1/models/enrollment.model";
-import { ChatMessageModel } from "@/api/v1/models/chat-message.model";
 import { ChatThreadModel } from "@/api/v1/models/chat-thread.model";
 import GradesService from "@/api/v1/services/grades/grades.service";
 
@@ -269,7 +268,8 @@ class ChatServiceImpl {
   }
 
   async getMessagesByThread(threadId: string) {
-    return await ChatMessageModel.find({ threadId }).sort({ createdAt: 1 });
+    const thread = await ChatThreadModel.findById(threadId);
+    return thread?.messages || [];
   }
 
   async generate(input: {
@@ -289,15 +289,25 @@ class ChatServiceImpl {
     }
 
     // Save user message
-    await ChatMessageModel.create({
-      userId: user.id,
+    const thread = await ChatThreadModel.findByIdAndUpdate(
       threadId,
-      role: "user",
-      content: message,
-    });
+      {
+        $push: {
+          messages: {
+            role: "user",
+            content: message,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true },
+    );
 
-    const recentHistory = await this.getMessagesByThread(threadId as string);
-    const historyStrings = recentHistory.map(
+    if (!thread) {
+      throw new CustomError("Thread not found", 404);
+    }
+
+    const historyStrings = thread.messages.map(
       (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
     );
 
@@ -321,15 +331,14 @@ class ChatServiceImpl {
       }
 
       // Save assistant response
-      await ChatMessageModel.create({
-        userId: user.id,
-        threadId,
-        role: "assistant",
-        content,
-      });
-
-      // Update thread timestamp
       await ChatThreadModel.findByIdAndUpdate(threadId, {
+        $push: {
+          messages: {
+            role: "assistant",
+            content,
+            createdAt: new Date(),
+          },
+        },
         updatedAt: new Date(),
       });
 
@@ -359,15 +368,25 @@ class ChatServiceImpl {
     }
 
     // Save user message
-    await ChatMessageModel.create({
-      userId: user.id,
+    const thread = await ChatThreadModel.findByIdAndUpdate(
       threadId,
-      role: "user",
-      content: message,
-    });
+      {
+        $push: {
+          messages: {
+            role: "user",
+            content: message,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true },
+    );
 
-    const recentHistory = await this.getMessagesByThread(threadId as string);
-    const historyStrings = recentHistory.map(
+    if (!thread) {
+      throw new CustomError("Thread not found", 404);
+    }
+
+    const historyStrings = thread.messages.map(
       (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
     );
 
@@ -397,15 +416,14 @@ class ChatServiceImpl {
 
       // Save complete assistant response
       if (fullResponse.trim()) {
-        await ChatMessageModel.create({
-          userId: user.id,
-          threadId,
-          role: "assistant",
-          content: fullResponse.trim(),
-        });
-
-        // Update thread timestamp
         await ChatThreadModel.findByIdAndUpdate(threadId, {
+          $push: {
+            messages: {
+              role: "assistant",
+              content: fullResponse.trim(),
+              createdAt: new Date(),
+            },
+          },
           updatedAt: new Date(),
         });
       }

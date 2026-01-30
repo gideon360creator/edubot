@@ -12,10 +12,13 @@ import {
 const toJson = (doc: AssessmentDocument | null) => doc?.toJSON();
 
 class AssessmentsServiceImpl {
-  async listAll(subjectId?: string) {
+  async listAll(subjectId?: string, lecturerId?: string) {
     const filter: Record<string, any> = {};
     if (subjectId) {
       filter.subjectId = subjectId;
+    }
+    if (lecturerId) {
+      filter.lecturerId = lecturerId;
     }
 
     const assessments = await AssessmentModel.find(filter)
@@ -61,6 +64,7 @@ class AssessmentsServiceImpl {
 
     const created = await AssessmentModel.create({
       subjectId,
+      lecturerId: subject.lecturerId,
       name,
       maxScore,
       weight,
@@ -69,18 +73,34 @@ class AssessmentsServiceImpl {
     return toJson(fresh);
   }
 
-  async delete(id: string) {
-    const deleted = await AssessmentModel.findByIdAndDelete(id);
-    if (!deleted) {
-      throw new CustomError("Assessment not found", 404);
-    }
-    return true;
-  }
-
-  async update(id: string, input: UpdateAssessmentInput) {
+  async delete(id: string, lecturerId?: string) {
     const assessment = await AssessmentModel.findById(id);
     if (!assessment) {
       throw new CustomError("Assessment not found", 404);
+    }
+
+    if (lecturerId && assessment.lecturerId.toString() !== lecturerId) {
+      throw new CustomError(
+        "Unauthorized: You do not own this assessment",
+        403,
+      );
+    }
+
+    await assessment.deleteOne();
+    return true;
+  }
+
+  async update(id: string, input: UpdateAssessmentInput, lecturerId?: string) {
+    const assessment = await AssessmentModel.findById(id);
+    if (!assessment) {
+      throw new CustomError("Assessment not found", 404);
+    }
+
+    if (lecturerId && assessment.lecturerId.toString() !== lecturerId) {
+      throw new CustomError(
+        "Unauthorized: You do not own this assessment",
+        403,
+      );
     }
 
     if (input.weight !== undefined && input.weight !== assessment.weight) {

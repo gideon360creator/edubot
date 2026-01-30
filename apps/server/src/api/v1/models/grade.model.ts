@@ -5,6 +5,7 @@ import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 export interface GradeDocument extends Document {
   studentId: Types.ObjectId;
   assessmentId: Types.ObjectId;
+  lecturerId: Types.ObjectId;
   studentNumber: string;
   score: number;
   createdAt: Date;
@@ -22,6 +23,12 @@ const GradeSchema = new Schema<GradeDocument>(
     assessmentId: {
       type: Schema.Types.ObjectId,
       ref: "Assessment",
+      required: true,
+      index: true,
+    },
+    lecturerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
       index: true,
     },
@@ -49,6 +56,9 @@ const GradeSchema = new Schema<GradeDocument>(
         }
         if (ret.assessmentId && ret.assessmentId instanceof Types.ObjectId) {
           ret.assessmentId = ret.assessmentId.toString();
+        }
+        if (ret.lecturerId && ret.lecturerId instanceof Types.ObjectId) {
+          ret.lecturerId = ret.lecturerId.toString();
         }
         delete ret._id;
         return ret;

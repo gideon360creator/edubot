@@ -42,6 +42,7 @@ class GradesServiceImpl {
 
     const created = await GradeModel.create({
       assessmentId: assessment._id,
+      lecturerId: assessment.lecturerId,
       studentId: student._id,
       studentNumber: studentNumberValue,
       score,
@@ -73,8 +74,12 @@ class GradesServiceImpl {
     };
   }
 
-  async listAll(subjectId?: string) {
+  async listAll(subjectId?: string, lecturerId?: string) {
     let query: any = {};
+
+    if (lecturerId) {
+      query.lecturerId = lecturerId;
+    }
 
     if (subjectId) {
       // Find all assessments for this subject
@@ -82,7 +87,7 @@ class GradesServiceImpl {
         "_id",
       );
       const assessmentIds = assessments.map((a) => a._id);
-      query = { assessmentId: { $in: assessmentIds } };
+      query.assessmentId = { $in: assessmentIds };
     }
 
     const grades = await GradeModel.find(query)
@@ -107,11 +112,19 @@ class GradesServiceImpl {
     });
   }
 
-  async update(id: string, input: Partial<CreateGradeInput>) {
+  async update(
+    id: string,
+    input: Partial<CreateGradeInput>,
+    lecturerId?: string,
+  ) {
     const { score } = input;
     const grade = await GradeModel.findById(id);
     if (!grade) {
       throw new CustomError("Grade not found", 404);
+    }
+
+    if (lecturerId && grade.lecturerId.toString() !== lecturerId) {
+      throw new CustomError("Unauthorized: You do not own this grade", 403);
     }
 
     if (score !== undefined) {
@@ -175,11 +188,16 @@ class GradesServiceImpl {
     });
   }
 
-  async deleteById(id: string) {
+  async deleteById(id: string, lecturerId?: string) {
     const grade = await GradeModel.findById(id);
     if (!grade) {
       throw new CustomError("Grade not found", 404);
     }
+
+    if (lecturerId && grade.lecturerId.toString() !== lecturerId) {
+      throw new CustomError("Unauthorized: You do not own this grade", 403);
+    }
+
     await grade.deleteOne();
     return true;
   }

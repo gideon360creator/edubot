@@ -33,6 +33,13 @@ api.interceptors.response.use(
       // Clear auth state on unauthorized
       useAuthStore.getState().logout()
     }
+
+    // Extract message from server response if available
+    const serverMessage = error.response?.data?.message
+    if (serverMessage) {
+      error.message = serverMessage
+    }
+
     return Promise.reject(error)
   },
 )

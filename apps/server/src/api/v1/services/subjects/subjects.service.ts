@@ -30,9 +30,12 @@ class SubjectsServiceImpl {
 
   async create(input: CreateSubjectInput) {
     const { name, code, lecturerId } = input;
-    const existing = await SubjectModel.findOne({ code });
+    const existing = await SubjectModel.findOne({
+      code,
+      lecturerId: new Types.ObjectId(lecturerId),
+    });
     if (existing) {
-      throw new CustomError("Subject code already exists", 400);
+      throw new CustomError("Subject code already exists in your records", 400);
     }
     const created = await SubjectModel.create({
       name,
@@ -56,10 +59,14 @@ class SubjectsServiceImpl {
     if (input.code) {
       const conflict = await SubjectModel.findOne({
         code: input.code,
+        lecturerId: subject.lecturerId,
         _id: { $ne: id },
       });
       if (conflict) {
-        throw new CustomError("Subject code already exists", 400);
+        throw new CustomError(
+          "Subject code already exists in your records",
+          400,
+        );
       }
       subject.code = input.code;
     }

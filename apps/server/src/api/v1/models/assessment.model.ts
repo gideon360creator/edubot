@@ -4,6 +4,7 @@ import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 export interface AssessmentDocument extends Document {
   subjectId: Types.ObjectId;
+  lecturerId: Types.ObjectId;
   name: string;
   maxScore: number;
   weight: number;
@@ -16,6 +17,12 @@ const AssessmentSchema = new Schema<AssessmentDocument>(
     subjectId: {
       type: Schema.Types.ObjectId,
       ref: "Subject",
+      required: true,
+      index: true,
+    },
+    lecturerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
       index: true,
     },
@@ -46,6 +53,9 @@ const AssessmentSchema = new Schema<AssessmentDocument>(
         if (ret.subjectId && ret.subjectId instanceof Types.ObjectId) {
           ret.subjectId = ret.subjectId.toString();
         }
+        if (ret.lecturerId && ret.lecturerId instanceof Types.ObjectId) {
+          ret.lecturerId = ret.lecturerId.toString();
+        }
         delete ret._id;
         return ret;
       },
@@ -57,7 +67,7 @@ const AssessmentSchema = new Schema<AssessmentDocument>(
   },
 );
 
-AssessmentSchema.index({ subjectId: 1, name: 1 }, { unique: false });
+AssessmentSchema.index({ subjectId: 1, name: 1 }, { unique: true });
 
 AssessmentSchema.plugin(mongoosePaginate);
 AssessmentSchema.plugin(aggregatePaginate);
