@@ -78,12 +78,18 @@ class ChatServiceImpl {
       return `${json.code || json.name}: ${json.name}`;
     });
 
-    const assessmentSummaries = assessments.map((a) => {
-      const json = a.toJSON() as any;
-      const subject = subjectMap.get(json.subjectId);
-      const subjectLabel = subject?.code || subject?.name || "Unknown subject";
-      return `${subjectLabel} — ${json.name} (weight ${json.weight}%, max ${json.maxScore})`;
-    });
+    const assessmentSummaries = await Promise.all(
+      assessments.map(async (a) => {
+        const json = a.toJSON() as any;
+        const subject = subjectMap.get(json.subjectId);
+        const subjectLabel =
+          subject?.code || subject?.name || "Unknown subject";
+        const gradeCount = await GradeModel.countDocuments({
+          assessmentId: a._id,
+        });
+        return `${subjectLabel} — ${json.name} (weight ${json.weight}%, max ${json.maxScore}, ${gradeCount} grades recorded)`;
+      }),
+    );
 
     let gradeSummaries: string[] = [];
     let gpaSummary: string | undefined;
@@ -101,7 +107,9 @@ class ChatServiceImpl {
       const gpa = await GradesService.computeGpa(studentNumber);
       gpaSummary = `GPA ${gpa.gpa.toFixed(2)} | ${gpa.percentage.toFixed(
         1,
-      )}% across ${gpa.graded_assessments} assessments (recorded weight ${gpa.recorded_weight}%)`;
+      )}% across ${gpa.graded_assessments} assessments (recorded weight ${
+        gpa.recorded_weight
+      }%)`;
 
       const assessmentMap = new Map(
         assessments.map((a) => [a._id.toString(), a.toJSON() as any]),
@@ -118,12 +126,23 @@ class ChatServiceImpl {
         } (weight ${assessment?.weight ?? 0}%)`;
       });
     } else {
-      const gradeCount = await GradeModel.countDocuments();
-      gpaSummary = `Role: ${user.role}. Total subjects: ${subjects.length}. Total assessments: ${assessments.length}. Recorded grades: ${gradeCount}.`;
+      const totalLecturerGrades = await GradeModel.countDocuments({
+        lecturerId: user.id,
+      });
+      gpaSummary = `Role: ${user.role}. Total subjects: ${subjects.length}. Total assessments: ${assessments.length}. Recorded grades (your subjects): ${totalLecturerGrades}.`;
 
-      const students = await UserModel.find({ role: "student" })
+      // Filter students to only those enrolled in this lecturer's subjects
+      const enrollments = await EnrollmentModel.find({ lecturerId: user.id });
+      const enrolledStudentIds = [
+        ...new Set(enrollments.map((e) => e.userId.toString())),
+      ];
+      const students = await UserModel.find({
+        _id: { $in: enrolledStudentIds },
+        role: "student",
+      })
         .select("fullName username studentNumber")
-        .sort({ createdAt: -1 });
+        .sort({ fullName: 1 });
+
       const studentSummaries = students.map((s) => {
         const json = s.toJSON() as any;
         return `${json.fullName} (${json.studentNumber || json.username})`;
@@ -133,9 +152,8 @@ class ChatServiceImpl {
       const assessmentIds = assessments.map((a) => a._id);
       const recent = await GradeModel.find({
         assessmentId: { $in: assessmentIds },
-      })
-        .sort({ createdAt: -1 })
-        .limit(12);
+      }).sort({ createdAt: -1 });
+      // .limit(32);
       const assessmentMap = new Map(
         assessments.map((a) => [a._id.toString(), a.toJSON() as any]),
       );
@@ -146,19 +164,19 @@ class ChatServiceImpl {
         const subjectLabel = subject?.code || subject?.name || "Subject";
         const assessmentLabel = assessment?.name || "Assessment";
         const studentLabel = json.studentNumber || "Student";
-        return `${studentLabel} — ${subjectLabel} / ${assessmentLabel}: ${json.score}/${
-          assessment?.maxScore ?? "?"
-        } (weight ${assessment?.weight ?? 0}%)`;
+        return `${studentLabel} — ${subjectLabel} / ${assessmentLabel}: ${
+          json.score
+        }/${assessment?.maxScore ?? "?"} (weight ${assessment?.weight ?? 0}%)`;
       });
 
       return {
         userSummary: userSummaryParts.join(" | "),
         gpaSummary,
-        subjects: this.truncate(subjectSummaries, 12),
-        assessments: this.truncate(assessmentSummaries, 16),
+        subjects: this.truncate(subjectSummaries, 24),
+        assessments: this.truncate(assessmentSummaries, 32),
         grades: [],
-        students: this.truncate(studentSummaries, 12),
-        recentGrades: this.truncate(recentSummaries, 16),
+        students: this.truncate(studentSummaries, 40),
+        recentGrades: this.truncate(recentSummaries, 32),
         role: user.role,
       };
     }
@@ -166,9 +184,9 @@ class ChatServiceImpl {
     return {
       userSummary: userSummaryParts.join(" | "),
       gpaSummary,
-      subjects: this.truncate(subjectSummaries, 12),
-      assessments: this.truncate(assessmentSummaries, 16),
-      grades: this.truncate(gradeSummaries, 16),
+      subjects: this.truncate(subjectSummaries, 24),
+      assessments: this.truncate(assessmentSummaries, 32),
+      grades: this.truncate(gradeSummaries, 32),
       role: user.role,
     };
   }
