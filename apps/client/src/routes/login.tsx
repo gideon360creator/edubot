@@ -17,6 +17,9 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  // throw new Error(
+  //   'Diagnostic Test: Global Error handling implementation check.',
+  // )
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">

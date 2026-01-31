@@ -7,6 +7,8 @@ import { useAuth } from './auth'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
+import { GlobalError } from './components/global-error'
+import { NotFound } from './components/not-found'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
@@ -28,6 +30,11 @@ function InnerApp() {
     scrollRestoration: true,
     defaultStructuralSharing: true,
     defaultPreloadStaleTime: 0,
+    defaultErrorComponent: ({ error, reset }) => (
+      <GlobalError error={error} reset={reset} />
+    ),
+    defaultNotFoundComponent: () => <NotFound />,
+    notFoundMode: 'root',
   })
 
   return <RouterProvider router={router} />
@@ -56,4 +63,4 @@ if (rootElement && !rootElement.innerHTML) {
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals()
+reportWebVitals(console.log)

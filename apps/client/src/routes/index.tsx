@@ -15,12 +15,14 @@ import {
   Shield,
   Users,
 } from 'lucide-react'
+import { useAuth } from '@/auth'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
 function HomePage() {
+  const { isAuthenticated, user } = useAuth()
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -33,11 +35,19 @@ function HomePage() {
             <span className="text-xl font-bold tracking-tight">EduBot</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login">
-              <Button variant="ghost" size="sm" className="cursor-pointer">
-                Log in
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to={user?.role === 'lecturer' ? '/lecturer' : '/student'}>
+                <Button variant="ghost" size="sm" className="cursor-pointer">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="cursor-pointer">
+                  Log in
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -62,14 +72,25 @@ function HomePage() {
               one unified experience.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link to="/register">
-                <Button
-                  size="lg"
-                  className="cursor-pointer h-12 px-8 text-base shadow-lg transition-transform hover:scale-105"
-                >
-                  Get Started <Rocket className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link to={user?.role === 'lecturer' ? '/lecturer' : '/student'}>
+                  <Button
+                    size="lg"
+                    className="cursor-pointer h-12 px-8 text-base shadow-lg transition-transform hover:scale-105"
+                  >
+                    Go to Dashboard <LayoutDashboard className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/register">
+                  <Button
+                    size="lg"
+                    className="cursor-pointer h-12 px-8 text-base shadow-lg transition-transform hover:scale-105"
+                  >
+                    Get Started <Rocket className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

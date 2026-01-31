@@ -36,13 +36,43 @@ import {
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
-import { Bot, Clock, SquarePen, User } from 'lucide-react'
+import { Bot, Check, Clock, Copy, SquarePen, User } from 'lucide-react'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+}
+
+function CopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6 rounded-md text-muted-foreground/50 hover:text-foreground transition-colors absolute -bottom-7 right-0"
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <Copy className="h-3 w-3" />
+      )}
+      <span className="sr-only">Copy message</span>
+    </Button>
+  )
 }
 
 interface AIInterfaceProps {
@@ -402,7 +432,7 @@ export function AIInterface({
                 </div>
                 <div
                   className={cn(
-                    'rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all',
+                    'rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all relative',
                     message.role === 'user'
                       ? 'bg-primary text-white rounded-tr-none'
                       : 'bg-muted/50 text-foreground rounded-tl-none border border-muted',
@@ -440,6 +470,7 @@ export function AIInterface({
                       {formatContent(message.content)}
                     </ReactMarkdown>
                   </div>
+                  <CopyButton content={message.content} />
                 </div>
               </motion.div>
             ))}
@@ -453,7 +484,7 @@ export function AIInterface({
                 <div className="bg-muted border border-muted mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm">
                   <Bot className="h-4 w-4" />
                 </div>
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl rounded-tl-none px-4 py-2.5 text-sm shadow-sm border border-muted/50">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl rounded-tl-none px-4 py-2.5 text-sm shadow-sm border border-muted/50 relative">
                   <div className="prose prose-sm dark:prose-invert max-w-none leading-snug space-y-0 text-foreground">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -480,6 +511,7 @@ export function AIInterface({
                     </ReactMarkdown>
                     <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse align-middle" />
                   </div>
+                  <CopyButton content={displayedContent} />
                 </div>
               </motion.div>
             )}

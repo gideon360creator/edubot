@@ -7,6 +7,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { AuthState } from '../auth/types'
 import { Toaster } from '@/components/ui/sonner'
 import { Analytics } from '@vercel/analytics/react'
+import { GlobalError } from '../components/global-error'
+import { NotFound } from '../components/not-found'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -34,4 +36,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       />
     </main>
   ),
+  errorComponent: (props) => <GlobalError {...props} />,
+  notFoundComponent: () => <NotFound />,
 })
