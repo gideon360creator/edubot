@@ -133,9 +133,22 @@ class ChatServiceImpl {
 
       // Filter students to only those enrolled in this lecturer's subjects
       const enrollments = await EnrollmentModel.find({ lecturerId: user.id });
-      const enrolledStudentIds = [
+      let enrolledStudentIds = [
         ...new Set(enrollments.map((e) => e.userId.toString())),
       ];
+
+      // If no enrollments found via lecturerId, try finding subjects first (backup)
+      if (enrolledStudentIds.length === 0) {
+        const subjects = await SubjectModel.find({ lecturerId: user.id });
+        const subjectIds = subjects.map((s) => s._id);
+        const backupEnrollments = await EnrollmentModel.find({
+          subjectId: { $in: subjectIds },
+        });
+        enrolledStudentIds = [
+          ...new Set(backupEnrollments.map((e) => e.userId.toString())),
+        ];
+      }
+
       const students = await UserModel.find({
         _id: { $in: enrolledStudentIds },
         role: "student",
@@ -233,7 +246,11 @@ class ChatServiceImpl {
       sections.push(`Grades: ${context.grades.join("; ")}`);
     }
     if (context.students?.length) {
-      sections.push(`Students: ${context.students.join("; ")}`);
+      sections.push(
+        `Your Enrolled Students: ${context.students.join(
+          "; ",
+        )} (This is your current class roster)`,
+      );
     }
     if (context.recentGrades?.length) {
       sections.push(`Recent grades: ${context.recentGrades.join("; ")}`);

@@ -43,10 +43,14 @@ export const streamChat = async (c: Context) => {
     await writer.write(encoder.encode(data));
   };
 
-  const sendData = (payload: any) => {
-    return write(
-      `data: ${typeof payload === "string" ? payload : JSON.stringify(payload)}\n\n`,
-    );
+  const sendData = async (payload: any) => {
+    try {
+      await write(
+        `data: ${typeof payload === "string" ? payload : JSON.stringify(payload)}\n\n`,
+      );
+    } catch (_err) {
+      // Stream likely closed by client
+    }
   };
 
   const close = async () => {
